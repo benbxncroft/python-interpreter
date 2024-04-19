@@ -70,21 +70,17 @@ class Interpreter:
             if self.current_char.isdigit():
                 return Token(INTEGER, self.integer())
 
-            if self.current_char == "+":
-                self.advance()
-                return Token(PLUS, "+")
+            operations = {
+                "+": Token(PLUS, "+"),
+                "-": Token(MINUS, "-"),
+                "*": Token(MULTIPLY, "*"),
+                "/": Token(DIVIDE, "/"),
+            }
 
-            if self.current_char == "-":
+            if self.current_char in operations:
+                token = operations[self.current_char]
                 self.advance()
-                return Token(MINUS, "-")
-
-            if self.current_char == "*":
-                self.advance()
-                return Token(MULTIPLY, "*")
-
-            if self.current_char == "/":
-                self.advance()
-                return Token(DIVIDE, "/")
+                return token
 
             self.error()
 
@@ -100,33 +96,29 @@ class Interpreter:
         else:
             self.error()
 
+    def term(self):
+        token = self.current_token
+        self.eat(INTEGER)
+        return token.value
+
     def expr(self):
-        """expr -> INTEGER PLUS INTEGER"""
-        # set current token to the first token taken from the input
         self.current_token = self.get_next_token()
+        result = self.term()
 
-        left = self.current_token
-        self.eat(INTEGER)
+        def f(x, value):
+            return {
+                PLUS: result + value,
+                MINUS: result - value,
+                MULTIPLY: result * value,
+                DIVIDE: result / value,
+            }[x]
 
-        op = self.current_token
-        self.eat(PLUS, MINUS, MULTIPLY, DIVIDE)
+        while self.current_token.type in (PLUS, MINUS, MULTIPLY, DIVIDE):
+            token = self.current_token
+            self.eat(token.type)
+            result = f(token.type, self.term())
 
-        right = self.current_token
-        self.eat(INTEGER)
-        # after the above call the self.current_token is set to
-        # EOF token
-
-        operations = {
-            PLUS: left.value + right.value,
-            MINUS: left.value - right.value,
-            MULTIPLY: left.value * right.value,
-            DIVIDE: left.value / right.value,
-        }
-
-        def f(x):
-            return operations[x]
-
-        return f(op.type)
+        return result
 
 
 def main():
