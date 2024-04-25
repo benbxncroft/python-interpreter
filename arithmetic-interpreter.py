@@ -49,13 +49,6 @@ class Interpreter:
     def get_token(self) -> Token:
         # lexical analyser
         # get token for each character
-        """
-        possible characters that need to be tokenised:
-        * whitespace (method to skip this)
-        * integer (must account for multiple digits)
-        * all operation characters (should all be same implementation)
-        * end of file (know when to stop analysis)
-        """
 
         token = self.is_end_of_file()
 
@@ -66,9 +59,16 @@ class Interpreter:
         if self.current_char.isdigit():
             return self.integer()
 
-        if self.current_char == "+":
+        operations = {
+            "+": TokenTypes.PLUS,
+            "-": TokenTypes.MINUS,
+            "*": TokenTypes.MULTIPLY,
+            "/": TokenTypes.DIVIDE,
+        }
+
+        if self.current_char in operations:
             self.pos += 1
-            return Token(TokenTypes.PLUS, self.current_char)
+            return Token(operations[self.current_char], self.current_char)
 
         if token:
             return token
@@ -96,28 +96,35 @@ class Interpreter:
             result = self.current_token.value
             self.current_token = self.get_token()
 
-        if self.current_token.token_type == TokenTypes.PLUS:
+        def f(x, value):
+            return {
+                TokenTypes.PLUS: result + value,
+                TokenTypes.MINUS: result - value,
+                TokenTypes.MULTIPLY: result * value,
+                TokenTypes.DIVIDE: result / value,
+            }[x]
+
+        while self.current_token.token_type in (
+            TokenTypes.PLUS,
+            TokenTypes.MINUS,
+            TokenTypes.MULTIPLY,
+            TokenTypes.DIVIDE,
+        ):
+            operation = self.current_token
             self.current_token = self.get_token()
             value = self.current_token.value
-            result = result + value
+            result = f(operation.token_type, value)
 
         return result
 
 
 def main() -> None:
-    # should take an input with string and run it through an interpreter
-
     """
     interpreter should do the following:
 
     * lexer that converts stream of input in to tokens
     * parser that parses those tokens in to a structure
     * interpreter that generates results from stream
-
-    a token data structure is required
-
-    * use a @dataclass
-    * token has a type and a value
     """
 
     while True:
