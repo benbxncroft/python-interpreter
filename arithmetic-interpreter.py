@@ -91,18 +91,10 @@ class Interpreter:
         self.eat(TokenTypes.INTEGER)
         return token.value
 
-    def expr(self) -> int:
+    def term(self):
         result = self.factor()
 
-        if self.current_token.token_type == TokenTypes.EOF:
-            return
-
-        while self.current_token.token_type in (
-            TokenTypes.MULTIPLY,
-            TokenTypes.DIVIDE,
-            TokenTypes.PLUS,
-            TokenTypes.MINUS,
-        ):
+        while self.current_token.token_type in (TokenTypes.MULTIPLY, TokenTypes.DIVIDE):
             token = self.current_token
             if token.token_type == TokenTypes.MULTIPLY:
                 self.eat(TokenTypes.MULTIPLY)
@@ -110,12 +102,23 @@ class Interpreter:
             elif token.token_type == TokenTypes.DIVIDE:
                 self.eat(TokenTypes.DIVIDE)
                 result = result / self.factor()
-            elif token.token_type == TokenTypes.PLUS:
+
+        return result
+
+    def expr(self) -> int:
+        result = self.term()
+
+        if self.current_token.token_type == TokenTypes.EOF:
+            return
+
+        while self.current_token.token_type in (TokenTypes.PLUS, TokenTypes.MINUS):
+            token = self.current_token
+            if token.token_type == TokenTypes.PLUS:
                 self.eat(TokenTypes.PLUS)
-                result = result + self.factor()
+                result = result + self.term()
             elif token.token_type == TokenTypes.MINUS:
                 self.eat(TokenTypes.MINUS)
-                result = result - self.factor()
+                result = result - self.term()
 
         return result
 
@@ -128,10 +131,30 @@ def main() -> None:
     * parser that parses those tokens in to a structure
     * interpreter that generates results from stream
 
-    based on the following grammar:
+    the basic arithmetic would be based on the following grammar:
 
     expr: factor((MULTIPLY|DIVIDE|PLUS|MINUS)factor)*
     factor: INTEGER
+
+    to account for levels of precedence and associativity with different operators:
+
+    For each level of precedence define a non-terminal. The body of a production
+    for the non-terminal should contain arithmetic operators from that level and
+    non-terminals for the next higher level of precedence.
+
+    Create an additional non-terminal factor for basic units of expression, in our case,
+    integers. The general rule is that if you have N levels of precedence, you
+    will need N + 1 non-terminals in total: one non-terminal for each level plus
+    one non-terminal for basic units of expression.
+
+    therefore:
+
+    expr: term((PLUS|MINUS)term)*
+    term: factor((MULTIPLY|DIVIDE)factor)*
+    factor: INTEGER
+
+    plus and minus have lower precedence than multiply and divide
+    e.g. 7 + 5 * 2 executed as 7 + (5 * 2)
     """
 
     while True:
