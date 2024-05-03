@@ -9,6 +9,8 @@ class TokenTypes(Enum):
     MULTIPLY = 4
     DIVIDE = 5
     EOF = 6
+    LPAREN = 7
+    RPAREN = 8
 
 
 @dataclass
@@ -60,6 +62,8 @@ class Lexer:
                 "-": TokenTypes.MINUS,
                 "*": TokenTypes.MULTIPLY,
                 "/": TokenTypes.DIVIDE,
+                "(": TokenTypes.LPAREN,
+                ")": TokenTypes.RPAREN,
             }
 
             if self.current_char in operations:
@@ -88,8 +92,14 @@ class Interpreter:
 
     def factor(self) -> str | int:
         token = self.current_token
-        self.eat(TokenTypes.INTEGER)
-        return token.value
+        if token.token_type == TokenTypes.INTEGER:
+            self.eat(TokenTypes.INTEGER)
+            return token.value
+        elif token.token_type == TokenTypes.LPAREN:
+            self.eat(TokenTypes.LPAREN)
+            result = self.expr()
+            self.eat(TokenTypes.RPAREN)
+            return result
 
     def term(self):
         result = self.factor()
@@ -155,6 +165,11 @@ def main() -> None:
 
     plus and minus have lower precedence than multiply and divide
     e.g. 7 + 5 * 2 executed as 7 + (5 * 2)
+
+    to include parantheses the factor production can be modified like so:
+
+    factor: INTEGER | LPAREN expr RPAREN
+    it then becomes recursive to evaluate the expressions inside parantheses
     """
 
     while True:
